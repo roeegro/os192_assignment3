@@ -1,24 +1,16 @@
 // Per-CPU state
-#define MAX_TOTAL_PAGES 32
 #define MAX_PSYC_PAGES 16
-#define INIT_SHELL_MAX_PID 2
-
+#define MAX_TOTAL_PAGES 32
+#define MAX_PID_OF_SELL_AND_INIT_ID 2
 struct cpu {
-  uchar apicid;                // Local APIC ID
-  struct context *scheduler;   // swtch() here to enter scheduler
-  struct taskstate ts;         // Used by x86 to find stack for interrupt
-  struct segdesc gdt[NSEGS];   // x86 global descriptor table
-  volatile uint started;       // Has the CPU started?
-  int ncli;                    // Depth of pushcli nesting.
-  int intena;                  // Were interrupts enabled before pushcli?
-  struct proc *proc;           // The process running on this cpu or null
-};
-
-struct pageInfo {
-    uint vAddress; //Virtual address
-    uint fileOffset; // offset in the swap file
-    int inFile; //boolean. 1- in swap file. otherwise 0
-    int allocated; //boolean. 1- allocated in the memory. otherwise 0 and we will need to send pageFault.
+    uchar apicid;                // Local APIC ID
+    struct context *scheduler;   // swtch() here to enter scheduler
+    struct taskstate ts;         // Used by x86 to find stack for interrupt
+    struct segdesc gdt[NSEGS];   // x86 global descriptor table
+    volatile uint started;       // Has the CPU started?
+    int ncli;                    // Depth of pushcli nesting.
+    int intena;                  // Were interrupts enabled before pushcli?
+    struct proc *proc;           // The process running on this cpu or null
 };
 
 extern struct cpu cpus[NCPU];
@@ -36,48 +28,58 @@ extern int ncpu;
 // at the "Switch stacks" comment. Switch doesn't save eip explicitly,
 // but it is on the stack and allocproc() manipulates it.
 struct context {
-  uint edi;
-  uint esi;
-  uint ebx;
-  uint ebp;
-  uint eip;
+    uint edi;
+    uint esi;
+    uint ebx;
+    uint ebp;
+    uint eip;
+};
+
+
+struct page {
+    int vAddress; //Virtual Address of the page
+    uint offsetInSwapFile;
+    pde_t* pgdir;
+    int isAvailable;
+    int time;
+    int readBit;
 };
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
-  uint sz;                     // Size of process memory (bytes)
-  pde_t* pgdir;                // Page table
-  char *kstack;                // Bottom of kernel stack for this process
-  enum procstate state;        // Process state
-  int pid;                     // Process ID
-  struct proc *parent;         // Parent process
-  struct trapframe *tf;        // Trap frame for current syscall
-  struct context *context;     // swtch() here to run process
-  void *chan;                  // If non-zero, sleeping on chan
-  int killed;                  // If non-zero, have been killed
-  struct file *ofile[NOFILE];  // Open files
-  struct inode *cwd;           // Current directory
-  char name[16];               // Process name (debugging)
+    uint sz;                     // Size of process memory (bytes)
+    pde_t* pgdir;                // Page table
+    char *kstack;                // Bottom of kernel stack for this process
+    enum procstate state;        // Process state
+    int pid;                     // Process ID
+    struct proc *parent;         // Parent process
+    struct trapframe *tf;        // Trap frame for current syscall
+    struct context *context;     // swtch() here to run process
+    void *chan;                  // If non-zero, sleeping on chan
+    int killed;                  // If non-zero, have been killed
+    struct file *ofile[NOFILE];  // Open files
+    struct inode *cwd;           // Current directory
+    char name[16];               // Process name (debugging)
 
-  //Swap file. must initiate with create swap file
-  struct file *swapFile;      //page file
+    //Swap file. must initiate with create swap file
+    struct file *swapFile;      //page file
+    struct page pagesInRam[MAX_PSYC_PAGES];
+    struct page pagesInFile[MAX_PSYC_PAGES];
+//    struct pageNode** firstPage  ;
+//    struct pageNode** lastPage ;
+    int currentNumberOfPagedOut;
+    int numberOfPagesWriteProtected;
+    int numberOfPageFaults;
+    int totalNumberOfPagedOut ;
+    int numberOfAllocatedPages;
+    int timer;
+};
 
-  //Our fields
-  struct pageInfo pagesInfo[MAX_TOTAL_PAGES]; //Data structure which will hold the pages of the process.
-  uint numberOfPagedOut; //Number of pages in swap file
-  int swapFileOffset; //Next place we can write in fileOffset
-  int numberOfAllocatedPages;                    // the total allocated pages
-  /*
-   *   uint fileOffset;                           // next place to write in the file
-
-
-  int numberOfPageFaults;                        // the number of times a page fault has occurred
-  int totalNumberOfPagedOut;                    // the number of times a page was moved to swap file
-  int inRAMQueue[MAX_PSYC_PAGES];
-  int availableOffsetQueue[MAX_PSYC_PAGES];
-   */
+struct pageNode{
+    struct page* pageData; //Will hold the page itself.
+    struct pageNode* prev;
 };
 
 // Process memory is laid out contiguously, low addresses first:

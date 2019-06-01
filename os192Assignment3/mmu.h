@@ -37,6 +37,7 @@
 #define CR0_CD          0x40000000      // Cache Disable
 #define CR0_PG          0x80000000      // Paging
 
+
 #define CR4_PSE         0x00000010      // Page size extension
 
 // various segment selectors.
@@ -141,11 +142,7 @@ struct segdesc {
 #define PTE_D           0x040   // Dirty
 #define PTE_PS          0x080   // Page Size
 #define PTE_MBZ         0x180   // Bits must be zero
-
-//Macros to turn on specific bit
-#define PTE_P_ON(pte)       ((uint)(pte) | PTE_P)
-#define PTE_A_ON(pte)       ((uint)(pte) | PTE_A)
-
+#define PTE_PG          0x200   // In SwapFile
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)
 #define PTE_FLAGS(pte)  ((uint)(pte) &  0xFFF)

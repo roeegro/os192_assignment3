@@ -7,9 +7,262 @@
 #include "proc.h"
 #include "elf.h"
 
+static char buf[PGSIZE];
 extern char data[];  // defined by kernel.ld
-
 pde_t *kpgdir;  // for use in scheduler()
+int defaultMechanism = 0;
+
+int pop() {
+////#if LIFO
+    int maxIndex = -1;
+    int maxTime = -1;
+    for (int i = 0; i < MAX_PSYC_PAGES; ++i) {
+        if (myproc()->pagesInRam[i].time > maxTime) {
+            maxIndex = i;
+            maxTime = myproc()->pagesInRam[i].time;
+        }
+    }
+    if (maxIndex == -1)
+        panic("maxIndex=-1 => empty struct in pop");
+   // getListImage();
+
+    return maxIndex;
+
+    ////#endif
+
+//    // #if SCFIFO
+//    int maxIndex = -1;
+//    int maxTime = -1;
+//    for (int i = 0; i < MAX_PSYC_PAGES; ++i) {
+//        if (myproc()->pagesInRam[i].time > maxTime) {
+//            maxIndex = i;
+//            maxTime = myproc()->pagesInRam[i].time;
+//        }
+//    }
+//    if (maxIndex == -1)
+//        panic("maxIndex=-1 => empty struct in pop");
+//    if (myproc()->pagesInRam[maxIndex].readBit == 1) {
+//        myproc()->pagesInRam[maxIndex].readBit = 0;
+//        return pop();
+//    }
+//    getListImage();
+//    return maxIndex;
+////#endif
+}
+
+
+//Data structure for policies.
+
+//int isEmpty(struct proc *procToCheck) {
+//    return (procToCheck->numNodes==0);
+//}
+//
+//void push(struct page *pagetoInsert) {
+////#if LIFO
+//    cprintf("push : vadress: %d\n",pagetoInsert->vAddress);
+//    if(pagetoInsert<=0)
+//        panic("pagetoInsert <= 0 in push");
+//
+//    struct proc* curproc = myproc();
+//    if(isEmpty(curproc)) {
+//        cprintf("first push" );
+//
+//        struct pageNode newPageNode=kalloc(sizeof(struct pageNode));
+//        struct pageNode* newPageNodeP=&newPageNode;
+//        newPageNode.pageData=pagetoInsert;
+//        newPageNode.prev=0;
+//        curproc->firstPage=&newPageNodeP;
+//        curproc->lastPage=&newPageNodeP;
+//        curproc->numNodes++;
+//        getListImage();
+//
+//    }
+//    else{
+//        cprintf("NOT first push\n" );
+//        struct pageNode *preFirstP=*(curproc->firstPage);
+//        struct pageNode preFirst=*preFirstP;
+//
+//        struct pageNode newPageNode=malloc(sizeof(struct pageNode));
+//        newPageNode.pageData=pagetoInsert;
+//        newPageNode.prev=&preFirst;
+//        struct pageNode *newPageNodeP=&newPageNode;
+//        curproc->firstPage=&newPageNodeP;
+//        curproc->numNodes++;
+//        getListImage();
+//    }
+//
+////    cprintf("NOT first push\n" );
+////    struct pageNode newPageNode;
+////    newPageNode.pageData=pagetoInsert;
+////    newPageNode.prev=*curproc->firstPage;
+////    struct pageNode *newPageNodeP=&newPageNode;
+////    curproc->firstPage=&newPageNodeP;
+////    curproc->numNodes++;
+////    getListImage();
+//
+////    struct pageNode newNode;
+////    struct pageNode * toInsert=&newNode;
+////     //   cprintf("1.&&&&&&&&&&!!!\n");
+////    toInsert->pageData=pagetoInsert; //TODO
+////      //  cprintf("1.243534345!!!\n");
+////    toInsert->prev=0;
+////    cprintf("1.1!!!\n");
+////    struct pageNode* firstPage = myproc()->firstPage;
+////       cprintf("22222!!!\n");
+////    if(isEmpty(curproc)){
+////            cprintf("2!!!\n");
+////        firstPage = toInsert;
+////        firstPage->prev = 0 ;
+////        curproc->lastPage = toInsert;
+////        return;
+////    }
+////        cprintf("3!!!\n");
+////    toInsert->prev = firstPage;
+////    firstPage = toInsert;
+////        cprintf("4!!!\n");
+//
+////#endif
+//#if SCFIFO
+////    struct pageNode* toInsert=0;
+////    toInsert->pageData=pagetoInsert;
+////    toInsert->prev=0;
+////    struct pageNode* firstPage = myproc()->firstPage;
+////    if(isEmpty(myproc())){
+////        firstPage = toInsert;
+////        firstPage->prev = 0 ;
+////        myproc()->lastPage = toInsert;
+////        return;
+////    }
+////    firstPage->prev = toInsert;
+////    firstPage = toInsert;
+//  //          myproc()->numNodes++;
+//
+//#endif
+//
+//}
+//
+//struct pageNode *pop() {
+////#if LIFO
+////    if(isEmpty(myproc()))
+////          panic("empty struct in pop");
+////    struct pageNode** firstPage = myproc()->firstPage;
+////    struct pageNode* newfirstPage =(*firstPage)->prev;
+////    struct pageNode* res = *firstPage;
+////    *firstPage = newfirstPage;
+//    myproc()->numNodes--;
+//   // return res;
+////#endif
+////#if SCLIFO
+////    cprintf("POP!!!\n");
+////    struct pageNode* firstPage = myproc()->firstPage;
+////    struct pageNode* lastPage = myproc()->lastPage;
+////    if(isEmpty(myproc()))
+////       panic("empty struct in pop");
+////    struct pageNode* res = lastPage;
+////    lastPage = lastPage->prev;
+////    pte_t *entry = walkpgdir(pgdir, (void *) res->vAddress, 0);
+////    int isAccessesed = *entry && PTE_A;
+////    if(!isAccessesed){
+////        return res;
+////    }
+////    res &= ~PTE_A;
+////    push(res->pageData);
+//    //myproc()->numNodes--;
+////    return pop(); //Recuresive because we need to return page with turned off PTE_A.
+////#endif
+//
+//    panic("Didn't find such a policy");
+//}
+//
+//void initialPush(struct proc *newProc, struct page *pagetoInsert) {
+////#if LIFO
+//    cprintf("initialPush\n");
+////    struct proc* curproc = newProc;
+////    struct pageNode* toInsert=0;
+////    struct page newPage=*pagetoInsert;
+////    toInsert->pageData=&newPage;
+////    toInsert->prev=0;
+////    struct pageNode** firstPage = curproc->firstPage;
+////    if(isEmpty(curproc)){
+////        firstPage = toInsert;
+////        firstPage->prev = 0 ;
+////        curproc->lastPage = toInsert;
+////        return;
+////    }
+////    toInsert->prev = firstPage;
+////    firstPage = toInsert;
+////#endif
+//#if SCFIFO
+//    struct proc* curproc = newProc;
+//    cprintf("Here\n");
+//    struct pageNode* toInsert=0;
+//    struct page newPage=*pagetoInsert;
+//    toInsert->pageData=&newPage;
+//    toInsert->prev=0;
+//    struct pageNode* firstPage = curproc->firstPage;
+//    if(isEmpty(curproc)){
+//        firstPage = toInsert;
+//        firstPage->prev = 0 ;
+//        curproc->lastPage = toInsert;
+//        return;
+//    }
+//    firstPage->prev = toInsert;
+//    firstPage = toInsert;
+//#endif
+//
+//}
+//
+//void copypageNodeStruct(struct proc *oldProc, struct proc *newProc) {
+//    //TODO : not create new page with the same data, but take in from newProc arry
+//#if LIFO | SCFIFO
+//    cprintf("copypageNodeStruct\n");
+//
+////    struct pageNode* firstPageOld = oldProc->firstPage;
+////    struct pageNode* lastPageOld = oldProc->lastPage;
+////    struct pageNode* temp = lastPageOld;
+////    newProc->lastPage = temp;
+////    while(temp != firstPageOld){
+////        initialPush(newProc,temp->pageData);
+////        temp=temp->prev;
+////    }
+////    newProc->firstPage = temp;
+//#endif
+//}
+////End functions of data structure.
+//
+////Our implementation: Finds next index of current process's table(PageInFile or PageInRAM) table.
+////Returns -1 if table is full.
+int
+findOccupiedIndex(struct page pages[]) {
+    for (int i = 0; i < MAX_PSYC_PAGES; i++) {
+        if (!pages[i].isAvailable)
+            return i;
+    }
+    return -1;
+}
+
+int
+findFreeIndex(struct page pages[]) {
+    for (int i = 0; i < MAX_PSYC_PAGES; i++) {
+        if (pages[i].isAvailable)
+            return i;
+    }
+    return -1;
+}
+
+
+int findIndexToSwapOut() {
+#if NONE
+    struct proc* curproc = myproc();
+    cprintf("NONE is activated\n");
+    return findIndexToSwapOut(curproc->pagesInRam);
+#endif
+#if LIFO | SCFIFO
+    return pop();
+#endif
+
+    panic("Bla Bla Bla");
+}
 
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
@@ -51,6 +304,11 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc) {
         *pde = V2P(pgtab) | PTE_P | PTE_W | PTE_U;
     }
     return &pgtab[PTX(va)];
+}
+
+pte_t *
+walkpgdirWrapper(pde_t *pgdir, const void *va, int alloc) {
+    return walkpgdir(pgdir, va, alloc);
 }
 
 // Create PTEs for virtual addresses starting at va that refer to
@@ -112,17 +370,292 @@ static struct kmap {
         {(void *) DEVSPACE, DEVSPACE, 0,            PTE_W}, // more devices
 };
 
+void getDiskImage() {
+    int i = 0;
+    cprintf("--------------------DISK IMAGE START-----------\n");
+
+    while (i < MAX_PSYC_PAGES) {
+        cprintf("%d.  virual address: %d   file offset: %d  available: %d   time:%d     readBit:%d   \n", i,
+                (uint) myproc()->pagesInFile[i].vAddress,
+                myproc()->pagesInFile[i].offsetInSwapFile, myproc()->pagesInFile[i].isAvailable,myproc()->pagesInFile[i].time,myproc()->pagesInFile[i].readBit);
+        i++;
+    }
+    cprintf("------------------------END DISK IMAGE-----------\n");
+}
+
+void getRAMImage() {
+    int i = 0;
+    cprintf("--------------------RAM IMAGE START-----------\n");
+
+    while (i < MAX_PSYC_PAGES) {
+        cprintf("i: %d.  virual address: %d,   file offset: %d , available: %d ,   time:%d,  readBit:%d \n", i, myproc()->pagesInRam[i].vAddress,
+                (int) myproc()->pagesInRam[i].offsetInSwapFile, myproc()->pagesInRam[i].isAvailable,myproc()->pagesInRam[i].time,myproc()->pagesInRam[i].readBit);
+        i++;
+    }
+    cprintf("------------------------END RAM DISK IMAGE-----------\n");
+}
+
+//void getListImage() {
+//    cprintf("--------------------List IMAGE START-----------\n");
+//    if (isEmpty(myproc())) {
+//        cprintf("empty list\n");
+//        cprintf("------------------------END RAM DISK IMAGE-----------\n");
+//        return;
+//    }
+//    struct pageNode *temp = *(myproc()->firstPage);
+//    cprintf(" there are %d node \n",myproc()->numNodes);
+//        for (int i =1; i <= myproc()->numNodes; ++i) {
+//            cprintf(" Node num %d:  %  virual address: %d   file offset: %d  available: %d\n", i,
+//                    (uint) temp->pageData->vAddress,
+//                    (int) temp->pageData->offsetInSwapFile, temp->pageData->isAvailable);
+//            temp = temp->prev;
+//
+//        }
+//    cprintf("------------------------END RAM DISK IMAGE-----------\n");
+//}
+
+int writePageToFile(int userPageVAddr, pde_t *pgdir) {
+    struct proc *curproc = myproc();
+    int freePlace = findFreeIndex(curproc->pagesInFile);
+    writeToSwapFile(curproc, (char *) userPageVAddr, PGSIZE * freePlace, PGSIZE);
+    curproc->pagesInFile[freePlace].isAvailable = 0;
+    curproc->pagesInFile[freePlace].vAddress = userPageVAddr;
+    curproc->pagesInFile[freePlace].pgdir = pgdir;
+    return 1;
+}
+
+int readPageFromFile(int ramCtrlrIndex, int userPageVAddr, char *buff) {
+    struct proc *curproc = myproc();
+    int i;
+    //int retInt;
+    for (i = 0; i < MAX_PSYC_PAGES; i++) {
+        //find section in file with the same va.
+        if (curproc->pagesInFile[i].vAddress == userPageVAddr) {
+            readFromSwapFile(curproc, buff, i * PGSIZE, PGSIZE);
+            curproc->pagesInFile[ramCtrlrIndex] = curproc->pagesInFile[i];
+            curproc->pagesInFile[i].isAvailable = 1;
+            return 1;
+        }
+    }
+    //if reached here - physical address given is not paged out (not found)
+    return -1;
+}
+
+int isPageInFile(int vAddr, pde_t *pgdir) {
+    pte_t *entry = walkpgdir(pgdir, (char *) vAddr, 0);
+    return (*entry && PTE_PG);
+}
+
+void changePagedInPTE(int vAddr, int pAddr, pde_t *pgdir) {
+    pte_t *entry = walkpgdir(pgdir, (void *) vAddr, 0);
+    *entry |= PTE_P | PTE_W | PTE_U;      //Turn on needed bits
+    *entry &= ~PTE_PG;
+    *entry |= pAddr; //We assume that the 12 least significant bits are 0.
+    lcr3(V2P(myproc()->pgdir));
+}
+
+void changePagedOutPTE(int vAddr, pde_t *pgdir) {
+    pte_t *entry = walkpgdir(pgdir, (void *) vAddr, 0);
+    *entry &= ~PTE_P;
+    *entry |= PTE_PG;
+    *entry &= PTE_FLAGS(*entry); //clear junk physical address
+    lcr3(V2P(myproc()->pgdir));
+}
+
+void insertIntoRamArr(int indexIn, uint vAddress) {
+    struct proc *curproc = myproc();
+    curproc->pagesInRam[indexIn].vAddress = (uint) vAddress;
+    curproc->pagesInRam[indexIn].offsetInSwapFile = -1;
+    curproc->pagesInRam[indexIn].pgdir = curproc->pgdir;
+    curproc->pagesInRam[indexIn].isAvailable = 0;
+    curproc->pagesInRam[indexIn].readBit=0;
+    curproc->pagesInRam[indexIn].time=curproc->timer;
+    curproc->timer++;
+}
+
+void deleteFromRamArr(int indexOut) {
+    struct proc *curproc = myproc();
+    curproc->pagesInRam[indexOut].vAddress = 0;
+    curproc->pagesInRam[indexOut].pgdir = 0;
+    curproc->pagesInRam[indexOut].isAvailable = 1;
+    curproc->pagesInRam[indexOut].offsetInSwapFile = -1;
+    curproc->pagesInRam[indexOut].readBit=0;
+    curproc->pagesInRam[indexOut].time=-1;
+
+}
+
+void deleteFromFileArr(int indexOut) {
+    struct proc *curproc = myproc();
+    curproc->pagesInFile[indexOut].vAddress = 0;
+    curproc->pagesInRam[indexOut].offsetInSwapFile = -1;
+    curproc->pagesInFile[indexOut].pgdir = 0;
+    curproc->pagesInFile[indexOut].isAvailable = 1;
+}
+
+void insertIntoFileArr(int indexIn, uint vAddress) {
+    struct proc *curproc = myproc();
+    curproc->pagesInFile[indexIn].offsetInSwapFile = indexIn * PGSIZE;
+    curproc->pagesInFile[indexIn].vAddress = (uint) vAddress;
+    curproc->pagesInFile[indexIn].pgdir = curproc->pgdir;
+    curproc->pagesInFile[indexIn].isAvailable = 0;
+}
+
+int getPagePAddr(int userPageVAddr, pde_t *pgdir) {
+    pte_t *pte;
+    pte = walkpgdir(pgdir, (int *) userPageVAddr, 0);
+    if (!pte) //uninitialized page table
+        return -1;
+    return PTE_ADDR(*pte);
+}
+
+//Our implementation: Swap page from RAM into swapFile of current process, add free his place in ranARR. returns the free index in ramARR
+uint
+swapout() {//TODO fix
+    struct proc *curproc = myproc();
+    int availableIndexInDisk = findFreeIndex(curproc->pagesInFile);
+    if(availableIndexInDisk==-1)
+     panic("no place in fileArr to enter to file");
+    int foundIndex = findIndexToSwapOut(curproc->pagesInRam);
+    if(foundIndex==-1)
+        panic("didnt find index to swapout in ramArr");
+    cprintf("SwapOut Proccess id : %d swapout index :%d in RamArr to index:%d in fileArr\n", myproc()->pid,foundIndex,availableIndexInDisk);
+
+    int vAddressOfSwapedPage = curproc->pagesInRam[foundIndex].vAddress;
+    //int outPagePAddr = getPagePAddr(vAddressOfSwapedPage,curproc->pagesInRam[foundIndex].pgdir);
+   // uint pa;
+   // pte_t *entry = walkpgdir(curproc->pgdir, (char *) vAddressOfSwapedPage, 0);
+   // pa = PTE_ADDR(*entry); //physical address of page to swapOut
+    //write data of swapped page from memmory to file
+  //  writeToSwapFile(curproc, (char *) pa, availableIndexInDisk * PGSIZE,
+  //                  PGSIZE); //Writing content to free space in disk.
+    //update the pagesInFileArr
+    insertIntoFileArr(availableIndexInDisk, vAddressOfSwapedPage);
+    //free the data we moved to the disk
+  //  kfree(P2V(pa));
+  //  changePagedOutPTE(vAddressOfSwapedPage, curproc->pagesInRam[foundIndex].pgdir);
+    //reset entry pagesInRam[foundIndex]
+    deleteFromRamArr(foundIndex);
+//
+//    lcr3(V2P(curproc->pgdir)); //Flushing TLB
+//
+//    char *v = P2V(outPagePAddr);
+//    kfree(v);
+    getRAMImage();
+    getDiskImage();
+    //cprintf("Swapout finished. The vAddress of the swaped page : %d , paddress: %d\n", vAddressOfSwapedPage,pa);
+    curproc->currentNumberOfPagedOut++;
+    curproc->totalNumberOfPagedOut++;
+    return foundIndex;
+//    curproc->pagesInRam[foundIndex].pgdir = pageDirectory;
+//    curproc->pagesInRam[foundIndex].offsetInSwapFile = -1;
+
+}
+
+uint
+anotherSwapOut(uint va) {
+    int userPageVa = PGROUNDDOWN(va);
+    char *newVa = kalloc();
+    if (newVa == 0) {
+        panic("KALLOC FAILED IN SWAP OUT");
+    }
+    uint newPa = V2P(newVa);
+    struct proc *curproc = myproc();
+    memset(newVa, 0, PGSIZE);
+    int selectedIndexToSwapOut = findIndexToSwapOut();
+    cprintf("anotherSwapOut Proccess id : %d swapout index :%d \n", myproc()->pid,selectedIndexToSwapOut);
+
+    struct page selectedPageToBeSwapedOut = curproc->pagesInRam[selectedIndexToSwapOut];
+
+
+    readPageFromFile(selectedIndexToSwapOut, selectedPageToBeSwapedOut.vAddress, buf);
+    int outPagePAddr = getPagePAddr(selectedPageToBeSwapedOut.vAddress, selectedPageToBeSwapedOut.pgdir);
+    memmove((void *) newPa, buf, PGSIZE);
+    writePageToFile(selectedPageToBeSwapedOut.vAddress, selectedPageToBeSwapedOut.pgdir);
+
+    int availableIndexInDisk = findFreeIndex(curproc->pagesInFile); //To locate the selected index
+    insertIntoFileArr(availableIndexInDisk, selectedPageToBeSwapedOut.vAddress);
+    changePagedInPTE(userPageVa, V2P(newPa), curproc->pgdir);
+
+
+    changePagedOutPTE(selectedPageToBeSwapedOut.vAddress, selectedPageToBeSwapedOut.pgdir);
+    deleteFromRamArr(selectedIndexToSwapOut);
+    char *v = P2V(outPagePAddr);
+    kfree(v);
+    //Statistics
+    curproc->totalNumberOfPagedOut++;
+    curproc->currentNumberOfPagedOut++;
+    getRAMImage();
+    return 1;
+
+}
+
+void swapIn(uint va) { //Assumes there is place in RAM
+    cprintf("swapIn Proccess id : %d swapIn va:%d \n", myproc()->pid,va);
+    struct proc *curproc = myproc();
+    uint vaPageAligned = PGROUNDDOWN(va);
+    //pte_t *entry;
+    char *newPageVa;
+    int indexIn = findFreeIndex(curproc->pagesInRam);
+    //cprintf("Proccess id : %d We should do kalloc in bringPageFromDisk(uint va)\n", myproc()->pid);
+    //finding page with va with the same virtual address.
+    int i = 0;
+    while (i < MAX_PSYC_PAGES && curproc->pagesInFile[i].vAddress != vaPageAligned) {
+        i++;
+    }
+    if (i == MAX_PSYC_PAGES)
+        panic("Didn't find page with the same va in file");
+    int offsetOfPageContentInFile = curproc->pagesInFile[i].offsetInSwapFile; //reading content of page from swap file.
+    readFromSwapFile(curproc, buf, offsetOfPageContentInFile, PGSIZE);
+
+    //write buffer to allocated memmory
+    if ((newPageVa = kalloc()) == 0) {
+        panic("Kalloc is impossible when we had to bring page from disk\n");
+    }
+    memset(newPageVa, 0, PGSIZE);
+    lcr3(V2P(curproc->pgdir));
+
+    //update entry
+    changePagedInPTE(vaPageAligned, V2P(newPageVa), curproc->pgdir);
+    //write data from file to memmory
+    readFromSwapFile(curproc, (char *) newPageVa, i * PGSIZE, PGSIZE);
+    //update pagesInRam[indexIn]
+    insertIntoRamArr(indexIn, (uint) newPageVa);
+    //reset pagesInFile[i]
+    deleteFromFileArr(i);
+    getDiskImage();
+    return;
+}
+
+//My implementationls
+
+void bringPageFromDisk(uint va) {
+    //getDiskImage();
+    //getRAMImage();
+    struct proc *curproc = myproc();
+    ////cprintf("enter bringPageFromDisk, pid:%d \n", curproc->pid);
+    int indexIn = findFreeIndex(curproc->pagesInRam);
+    if (indexIn != -1) { //No swap out is needed
+        //cprintf("we just need to bring page from disk without swapout\n");
+        swapIn(va);
+        curproc->currentNumberOfPagedOut--;
+    } else {
+        //cprintf("we need to do swapout in order to bring other page to disk\n");
+        swapout();
+        swapIn(va);
+    }
+    //cprintf("finished bringPageFromDisk, pid:%d \n", curproc->pid);
+}
+
+
 // Set up kernel part of a page table.
-pde_t *
-setupkvm(void) {
+pde_t *setupkvm(void) {
     pde_t *pgdir;
     struct kmap *k;
 
-    if ((pgdir = (pde_t *) kalloc()) == 0)
-        return 0;
+    if ((pgdir = (pde_t *) kalloc()) == 0) { return 0; }
     memset(pgdir, 0, PGSIZE);
-    if (P2V(PHYSTOP) > (void *) DEVSPACE)
-        panic("PHYSTOP too high");
+    //TODO:check!!
+    if (P2V(PHYSTOP) > (void *) DEVSPACE) { panic("PHYSTOP too high"); }
     for (k = kmap; k < &kmap[NELEM(kmap)];
     k++)
     if (mappages(pgdir, k->virt, k->phys_end - k->phys_start,
@@ -209,95 +742,52 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz) {
     return 0;
 }
 
-int findPageToReplaceIndex() {
-    //TODO:change acording to replacment policy
-    return 0;
-}
-
-void swapOut(pde_t *pgdir) {
-
-    struct proc *curproc = myproc();
-    int replaceIndex = findPageToReplaceIndex();
-    pte_t *pte;
-    int pageVaddress = curproc->pagesInfo[replaceIndex].vAddress;
-    writeToSwapFile(curproc, pageVaddress, curproc->swapFileOffset,
-                    PGSIZE); //writing one page from the virtual address.
-    //Replace the record in page info of the process with the new pgdir given as argument
-
-    //Change information about the page
-    curproc->pagesInfo[replaceIndex].inFile = 1;
-    curproc->pagesInfo[replaceIndex].fileOffset = curproc->swapFileOffset;
-
-    //Update statistics
-    curproc->numberOfPagedOut++;
-
-    //Replace pgdir in the physical memory
-    pte = walkpgdir(pgdir, (char *)pageVaddress, 0); //
-    //TODO:Maybe turn on some flags but I have no Atzabim now
-
-    //we now want to take virtual address of the physical address. The virtual memory pageVaddress is for page table.
-    //we want this virtual address in order to free it.
-    uint pageAddress = PTE_ADDR(*pte);
-    char* v_address = P2V(pageAddress);
-    kfree(v_address);
-    lcr3(V2P(curproc->pgdir));
-
-
-}
-
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
-    //Pay attention - oldsz,newsz = are addresses in the virtual memory.
+    cprintf("allocuvm start proccess id : %d\n", myproc()->pid);
     char *mem;
-    int index = 0;
     uint a;
     struct proc *curproc = myproc();
+    int indexOfFreeSpaceInRamArr = -1;
     if (newsz >= KERNBASE)
         return 0;
     if (newsz < oldsz)
         return oldsz;
 
     a = PGROUNDUP(oldsz);
-
     for (; a < newsz; a += PGSIZE) {
-        //TODO: If-Def
-        if (curproc->pid > INIT_SHELL_MAX_PID &&
-            a >= PGSIZE * MAX_PSYC_PAGES) { //If process tries to allocate memory from address higher then possible.
-            swapOut(pgdir);
-            return newsz; //TODO: We have to remove that when we will use if-def
-        }
         mem = kalloc();
         if (mem == 0) {
-            cprintf("allocuvm out of memory\n");
+            //cprintf("Proccess id %d allocuvm out of memory\n", myproc()->pid);
             deallocuvm(pgdir, newsz, oldsz);
             return 0;
         }
+
+
         memset(mem, 0, PGSIZE);
         if (mappages(pgdir, (char *) a, PGSIZE, V2P(mem), PTE_W | PTE_U) < 0) {
-            cprintf("allocuvm out of memory (2)\n");
+            //cprintf("allocuvm out of memory (2)\n");
             deallocuvm(pgdir, newsz, oldsz);
             kfree(mem);
             return 0;
         }
-        if (curproc->pid > INIT_SHELL_MAX_PID) {
-            //Update page info of process.
-            while (index < MAX_TOTAL_PAGES && curproc->pagesInfo[index].allocated)
-                index++;
-            if (index >= MAX_TOTAL_PAGES)
-                panic("No free non allocated page in this proc. Method:allocuvm , vm.c");
-            curproc->pagesInfo[index].allocated = 1;
-            curproc->pagesInfo[index].fileOffset = -1;
-            curproc->pagesInfo[index].vAddress = a;
-            curproc->pagesInfo[index].inFile = 0;
+        if (curproc->pid > MAX_PID_OF_SELL_AND_INIT_ID &&
+            (indexOfFreeSpaceInRamArr = findFreeIndex(curproc->pagesInRam)) == -1) { //No available place in ramArr
+            indexOfFreeSpaceInRamArr = swapout(curproc->pgdir);
+        }
+        if (curproc->pid > MAX_PID_OF_SELL_AND_INIT_ID) {
             curproc->numberOfAllocatedPages++;
-            pte_t *entry = walkpgdir(pgdir, (char *) a, 0);
-            *entry = PTE_P_ON(*entry); //turn on the bit of presence
-            *entry = PTE_A_ON(*entry); //turn on the bit of access. It also turn on the bit of the user
+            //update the new page in pagesInRam[indexOfFreeSpaceInRamArr]
+            insertIntoRamArr(indexOfFreeSpaceInRamArr,a);
+            getRAMImage();
+            //getListImage();
 
         }
     }
+    //cprintf("%d\n",a);
+    cprintf("allocuvm end proccess id : %d\n", myproc()->pid);
     return newsz;
 }
 
@@ -307,9 +797,10 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
 // process size.  Returns the new process size.
 int
 deallocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
+    //cprintf("Request to deallocate memory in process with id %d\n", myproc()->pid);
     pte_t *pte;
     uint a, pa;
-
+    struct proc *curproc = myproc();
     if (newsz >= oldsz)
         return oldsz;
 
@@ -324,6 +815,14 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz) {
                 panic("kfree");
             char *v = P2V(pa);
             kfree(v);
+            if (curproc->pid > MAX_PID_OF_SELL_AND_INIT_ID) {
+                int i = 0;
+                while (i < MAX_PSYC_PAGES && curproc->pagesInRam[i].vAddress != a)
+                    i++;
+                if (i < MAX_PSYC_PAGES) {
+                  deleteFromRamArr(i);
+                }
+            }
             *pte = 0;
         }
     }
@@ -362,6 +861,7 @@ clearpteu(pde_t *pgdir, char *uva) {
 
 // Given a parent process's page table, create a copy
 // of it for a child.
+
 pde_t *
 copyuvm(pde_t *pgdir, uint sz) {
     pde_t *d;
@@ -374,8 +874,12 @@ copyuvm(pde_t *pgdir, uint sz) {
     for (i = 0; i < sz; i += PGSIZE) {
         if ((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
             panic("copyuvm: pte should exist");
-        if (!(*pte & PTE_P))
+        if (!((*pte & PTE_P) || (*pte & PTE_PG))) //Added the second condition.
             panic("copyuvm: page not present");
+        if (*pte & PTE_PG) {
+            changePagedOutPTE(i, d);
+            continue;
+        }
         pa = PTE_ADDR(*pte);
         flags = PTE_FLAGS(*pte);
         if ((mem = kalloc()) == 0)
@@ -390,6 +894,7 @@ copyuvm(pde_t *pgdir, uint sz) {
     freevm(d);
     return 0;
 }
+
 
 //PAGEBREAK!
 // Map user virtual address to kernel address.
@@ -429,6 +934,7 @@ copyout(pde_t *pgdir, uint va, void *p, uint len) {
     }
     return 0;
 }
+
 
 //PAGEBREAK!
 // Blank page.

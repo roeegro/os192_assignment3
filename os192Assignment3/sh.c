@@ -72,7 +72,7 @@ runcmd(struct cmd *cmd)
     panic("runcmd");
 
   case EXEC:
-    ecmd = (struct execcmd*)cmd;
+          ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit();
     exec(ecmd->argv[0], ecmd->argv);
@@ -93,7 +93,8 @@ runcmd(struct cmd *cmd)
     lcmd = (struct listcmd*)cmd;
     if(fork1() == 0)
       runcmd(lcmd->left);
-    wait();
+
+   wait();
     runcmd(lcmd->right);
     break;
 
@@ -115,7 +116,8 @@ runcmd(struct cmd *cmd)
       close(p[1]);
       runcmd(pcmd->right);
     }
-    close(p[0]);
+
+   close(p[0]);
     close(p[1]);
     wait();
     wait();
@@ -185,8 +187,9 @@ fork1(void)
 
   pid = fork();
   if(pid == -1)
-    panic("fork");
-  return pid;
+  { panic("fork");}
+    return pid;
+
 }
 
 //PAGEBREAK!
